@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Biomechanical Head Impact Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Import Maps for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+        }
+
+        /* UI Overlays */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let clicks pass through to 3D canvas */
+            display: flex;
+            justify-content: space-between;
+            padding: 1.5rem;
+            z-index: 10;
+        }
+
+        .panel {
+            pointer-events: auto; /* Re-enable clicks for UI elements */
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            width: 340px;
+            max-height: calc(100vh - 3rem);
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        
+        .metric-box {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay -->
+    <div class="ui-layer flex-col md:flex-row">
+        
+        <!-- Left Panel: Controls -->
+        <div class="panel flex flex-col gap-6">
+            <div>
+                <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500 tracking-tight">NeuroGuard 3D</h1>
+                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Biomechanical Impact Sim</p>
+            </div>
+
+            <!-- Simulation Parameters -->
+            <div class="space-y-5">
+                <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                        <label class="text-slate-300">Punch Velocity / Mass (Force)</label>
+                        <span id="val-force" class="text-sky-300">3500 N</span>
+                    </div>
+                    <input type="range" id="slider-force" min="2500" max="4500" step="50" value="3500">
+                    <div class="flex justify-between text-[9px] text-slate-500">
+                        <span>2.5 kN (Jab)</span>
+                        <span>4.5 kN (Heavy Hook)</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                        <label class="text-slate-300">Guard Efficiency (Defense)</label>
+                        <span id="val-guard" class="text-indigo-300">50 %</span>
+                    </div>
+                    <input type="range" id="slider-guard" min="0" max="100" step="1" value="50">
+                    <div class="flex justify-between text-[9px] text-slate-500">
+                        <span>Open (0%)</span>
+                        <span>Tight Block (100%)</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                        <label class="text-slate-300">Brain Tissue Stiffness (G)</label>
+                        <span id="val-stiffness" class="text-emerald-300">2.4 kPa</span>
+                    </div>
+                    <input type="range" id="slider-stiffness" min="1.6" max="3.3" step="0.1" value="2.4">
+                    <div class="flex justify-between text-[9px] text-slate-500">
+                        <span>Soft / Aged</span>
+                        <span>Stiff / Healthy</span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-punch" class="mt-auto w-full py-3 rounded-lg bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-sm shadow-[0_0_15px_rgba(225,29,72,0.4)] hover:shadow-[0_0_25px_rgba(225,29,72,0.6)] transform hover:scale-[1.02] transition-all active:scale-95">
+                TRIGGER IMPACT
+            </button>
+            
+            <div class="text-[9px] text-slate-400 leading-tight">
+                * Drag canvas to rotate. Scroll to zoom.<br>
+                * Simulation uses hyper-viscoelastic wave models and structural shear damping (Bilston et al.).
+            </div>
+        </div>
+
+        <!-- Right Panel: Telemetry -->
+        <div class="panel flex flex-col gap-4">
+            <h2 class="text-sm font-bold text-slate-200 border-b border-slate-700 pb-2">Impact Telemetry</h2>
+            
+            <div class="grid grid-cols-1 gap-3">
+                <div class="metric-box">
+                    <div class="text-[10px] text-slate-400 uppercase tracking-wide">Applied Force</div>
+                    <div id="metric-applied" class="text-lg font-mono text-slate-200 font-bold">0.00 kN</div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="metric-box border-indigo-500/30">
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wide">Absorbed</div>
+                        <div id="metric-absorbed" class="text-lg font-mono text-indigo-400 font-bold">0.00 kN</div>
+                    </div>
+                    <div class="metric-box border-rose-500/30">
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wide">Transferred</div>
+                        <div id="metric-transferred" class="text-lg font-mono text-rose-400 font-bold">0.00 kN</div>
+                    </div>
+                </div>
+
+                <div class="metric-box border-emerald-500/30">
+                    <div class="text-[10px] text-slate-400 uppercase tracking-wide">Est. Strain Rate</div>
+                    <div id="metric-rate" class="text-lg font-mono text-emerald-400 font-bold">0 s⁻¹</div>
+                    <div class="text-[8px] text-slate-500 mt-1">Injury threshold approx >60 s⁻¹</div>
+                </div>
+
+                <div class="metric-box border-amber-500/30">
+                    <div class="text-[10px] text-slate-400 uppercase tracking-wide">Peak Local Strain</div>
+                    <div id="metric-strain" class="text-lg font-mono text-amber-400 font-bold">0.0 %</div>
+                    <div class="text-[8px] text-slate-500 mt-1">Concussion threshold ~15-20%</div>
+                </div>
+                
+                <div class="metric-box">
+                    <div class="text-[10px] text-slate-400 uppercase tracking-wide">Shear Wave Speed</div>
+                    <div id="metric-speed" class="text-lg font-mono text-sky-400 font-bold">1.55 m/s</div>
+                </div>
+            </div>
+            
+            <!-- Dynamic Color Legend -->
+            <div class="mt-auto pt-4 border-t border-slate-700">
+                <div class="text-[10px] text-slate-400 uppercase tracking-wide mb-2">Strain Intensity Map</div>
+                <div class="w-full h-3 rounded-full bg-gradient-to-r from-blue-600 via-green-400 to-red-600"></div>
+                <div class="flex justify-between text-[9px] text-slate-500 mt-1">
+                    <span>Low (0%)</span>
+                    <span>High (Max)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- DOM Elements ---
+        const sldForce = document.getElementById('slider-force');
+        const sldGuard = document.getElementById('slider-guard');
+        const sldStiff = document.getElementById('slider-stiffness');
+        
+        const valForce = document.getElementById('val-force');
+        const valGuard = document.getElementById('val-guard');
+        const valStiff = document.getElementById('val-stiffness');
+        
+        const mApplied = document.getElementById('metric-applied');
+        const mAbsorbed = document.getElementById('metric-absorbed');
+        const mTrans = document.getElementById('metric-transferred');
+        const mRate = document.getElementById('metric-rate');
+        const mStrain = document.getElementById('metric-strain');
+        const mSpeed = document.getElementById('metric-speed');
+        
+        const btnPunch = document.getElementById('btn-punch');
+
+        // --- Physics & State ---
+        let state = {
+            force: 3500, // N
+            guardEff: 50, // %
+            stiffness: 2.4, // kPa
+            density: 1000, // kg/m^3
+            animPhase: 0, // 0: idle, 1: punching, 2: returning
+            impactTriggered: false
+        };
+
+        // --- Three.js Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        // Add subtle fog to blend into background
+        scene.fog = new THREE.FogExp2(0x020617, 0.05);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(4, 2, 6);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 3;
+        controls.maxDistance = 15;
+        // Restrict angle to mostly front/side views
+        controls.minPolarAngle = Math.PI / 4;
+        controls.maxPolarAngle = Math.PI / 1.5;
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(5, 5, 5);
+        scene.add(dirLight);
+        
+        const blueLight = new THREE.PointLight(0x38bdf8, 2, 10);
+        blueLight.position.set(-2, -2, 2);
+        scene.add(blueLight);
+
+        // --- 3D Objects ---
+
+        // 1. Head Container (Transparent Head with Face/Nose Topology)
+        const headGroup = new THREE.Group();
+        
+        const headGeometry = new THREE.SphereGeometry(1.2, 64, 64);
+        headGeometry.scale(1, 1.25, 1.1); // Skull shape
+        headGeometry.computeVertexNormals();
+        
+        const headMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0x94a3b8,
+            metalness: 0.1,
+            roughness: 0.1,
+            transmission: 0.85, // Glass-like transparency
+            ior: 1.5,
+            transparent: true,
+            opacity: 1.0,
+            side: THREE.DoubleSide
+        });
+        const skull = new THREE.Mesh(headGeometry, headMaterial);
+        headGroup.add(skull);
+        
+        // Nose protrusion to explicitly show front-facing topology
+        const noseGeometry = new THREE.ConeGeometry(0.25, 0.5, 32);
+        noseGeometry.rotateX(Math.PI / 2); // Point forward (+Z)
+        const nose = new THREE.Mesh(noseGeometry, headMaterial);
+        nose.position.set(0, -0.1, 1.15);
+        headGroup.add(nose);
+        
+        scene.add(headGroup);
+
+        // 2. Brain (Anatomical Non-Circular Encephalon)
+        const brainGroup = new THREE.Group();
+        
+        // Custom GLSL Shader for Brain (Updated for World-Space Distance & Multi-Mesh Wave)
+        const brainUniforms = {
+            uTime: { value: 0.0 },
+            uImpactTime: { value: -999.0 },
+            uImpactPoint: { value: new THREE.Vector3(0, 0.15, 1.0) }, // Front surface of brain
+            uWaveSpeed: { value: 1.5 },
+            uDamping: { value: 3.0 },
+            uMaxAmplitude: { value: 0.0 },
+            uLightDir: { value: dirLight.position.clone().normalize() }
+        };
+
+        const vertexShader = `
+            uniform float uTime;
+            uniform float uImpactTime;
+            uniform vec3 uImpactPoint;
+            uniform float uWaveSpeed;
+            uniform float uDamping;
+            uniform float uMaxAmplitude;
+            
+            varying float vStrain;
+            varying vec3 vNormal;
+            
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                
+                // Get absolute world position for accurate wave propagation across multiple combined meshes
+                vec4 worldPos = modelMatrix * vec4(position, 1.0);
+                
+                // Time since impact
+                float t = max(0.0, uTime - uImpactTime);
+                
+                // Distance from vertex to impact point in world space
+                float dist = distance(worldPos.xyz, uImpactPoint);
+                
+                // Wave propagation logic
+                float waveFront = t * uWaveSpeed;
+                float distFromWave = abs(dist - waveFront);
+                
+                // Gaussian pulse for the shear wave
+                float pulseWidth = 15.0; 
+                float pulse = exp(-distFromWave * distFromWave * pulseWidth);
+                
+                // Viscoelastic spatial damping
+                float attenuation = exp(-uDamping * dist);
+                
+                // Final displacement magnitude
+                float displacement = uMaxAmplitude * pulse * attenuation;
+                
+                // Don't displace if wave hasn't started
+                if (t <= 0.0) displacement = 0.0;
+                
+                vStrain = displacement;
+                
+                // Displace outward along the normal
+                vec3 newPosition = position + normal * displacement;
+                
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+            }
+        `;
+
+        const fragmentShader = `
+            uniform float uMaxAmplitude;
+            uniform vec3 uLightDir;
+            
+            varying float vStrain;
+            varying vec3 vNormal;
+            
+            // Map scalar value to color gradient
+            vec3 getHeatmapColor(float val) {
+                vec3 c1 = vec3(0.0, 0.2, 0.8); // Deep Blue
+                vec3 c2 = vec3(0.0, 0.8, 0.8); // Cyan
+                vec3 c3 = vec3(0.2, 0.9, 0.2); // Green
+                vec3 c4 = vec3(0.9, 0.9, 0.0); // Yellow
+                vec3 c5 = vec3(0.9, 0.1, 0.1); // Red
+                
+                if (val < 0.25) return mix(c1, c2, val * 4.0);
+                if (val < 0.5)  return mix(c2, c3, (val - 0.25) * 4.0);
+                if (val < 0.75) return mix(c3, c4, (val - 0.5) * 4.0);
+                return mix(c4, c5, (val - 0.75) * 4.0);
+            }
+            
+            void main() {
+                // Normalize strain against expected max amplitude
+                float normStrain = 0.0;
+                if (uMaxAmplitude > 0.0) {
+                    normStrain = clamp(vStrain / (uMaxAmplitude * 0.8), 0.0, 1.0);
+                }
+                
+                vec3 baseColor = getHeatmapColor(normStrain);
+                
+                float diff = max(dot(vNormal, uLightDir), 0.0);
+                float ambient = 0.3;
+                vec3 finalColor = baseColor * (diff * 0.7 + ambient);
+                
+                gl_FragColor = vec4(finalColor, 1.0);
+            }
+        `;
+
+        const brainMaterial = new THREE.ShaderMaterial({
+            uniforms: brainUniforms,
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            side: THREE.DoubleSide
+        });
+
+        // Left Hemisphere
+        const leftHemiGeom = new THREE.SphereGeometry(0.7, 64, 64);
+        leftHemiGeom.scale(0.8, 1.25, 1.45);
+        leftHemiGeom.computeVertexNormals();
+        const leftHemi = new THREE.Mesh(leftHemiGeom, brainMaterial);
+        leftHemi.position.set(-0.38, 0.15, -0.1);
+        brainGroup.add(leftHemi);
+
+        // Right Hemisphere
+        const rightHemiGeom = new THREE.SphereGeometry(0.7, 64, 64);
+        rightHemiGeom.scale(0.8, 1.25, 1.45);
+        rightHemiGeom.computeVertexNormals();
+        const rightHemi = new THREE.Mesh(rightHemiGeom, brainMaterial);
+        rightHemi.position.set(0.38, 0.15, -0.1);
+        brainGroup.add(rightHemi);
+        
+        // Cerebellum
+        const cerebellumGeom = new THREE.SphereGeometry(0.45, 32, 32);
+        cerebellumGeom.scale(1.3, 0.7, 0.9);
+        cerebellumGeom.computeVertexNormals();
+        const cerebellum = new THREE.Mesh(cerebellumGeom, brainMaterial);
+        cerebellum.position.set(0, -0.7, -0.6);
+        brainGroup.add(cerebellum);
+
+        scene.add(brainGroup);
+
+        // 3. Boxing Gloves (Attacker & Guard)
+        
+        // Defensive Guard Gloves (Strictly parallel, vertical)
+        function createDefensiveGlove(colorStr) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: colorStr, 
+                roughness: 0.7,
+                metalness: 0.1
+            });
+            
+            // Main pad (Capsules default to aligning along Y axis - perfectly straight up)
+            const padGeom = new THREE.CapsuleGeometry(0.35, 0.6, 16, 16);
+            const pad = new THREE.Mesh(padGeom, mat);
+            group.add(pad);
+            
+            // Thumb
+            const thumbGeom = new THREE.CapsuleGeometry(0.12, 0.3, 16, 16);
+            const thumb = new THREE.Mesh(thumbGeom, mat);
+            thumb.position.set(0.2, 0.1, 0.2);
+            thumb.rotation.z = -Math.PI / 8;
+            group.add(thumb);
+            
+            return group;
+        }
+
+        // Using Red color for all gloves per requirement
+        const guardLeft = createDefensiveGlove(0xe11d48); 
+        // Mirror thumb for left glove
+        guardLeft.children[1].position.set(-0.2, 0.1, 0.2);
+        guardLeft.children[1].rotation.z = Math.PI / 8;
+        scene.add(guardLeft);
+
+        const guardRight = createDefensiveGlove(0xe11d48);
+        scene.add(guardRight);
+
+        // Update guard positions based on efficiency (High Guard / Peek-a-boo)
+        function updateGuardPositions() {
+            // Eff = 0: open guard (apart). Eff = 100: tight guard (touching)
+            const gap = 1.0 - (state.guardEff / 100); 
+            const xOffset = 0.38 + (gap * 0.7);
+            
+            // Positioned in front of lower face, STRICTLY parallel and facing UP (rotation 0)
+            guardLeft.position.set(-xOffset, -0.5, 1.6);
+            guardLeft.rotation.set(0, 0, 0); 
+
+            guardRight.position.set(xOffset, -0.5, 1.6);
+            guardRight.rotation.set(0, 0, 0);
+        }
+        updateGuardPositions();
+
+        // Attacking Arm & Glove
+        const attackerGroup = new THREE.Group();
+        
+        // Attacker Arm (Cylinder)
+        const armGeom = new THREE.CylinderGeometry(0.2, 0.25, 2.5, 16);
+        const armMat = new THREE.MeshStandardMaterial({ color: 0xc19a6b, roughness: 0.8 }); // Skin tone
+        const arm = new THREE.Mesh(armGeom, armMat);
+        arm.rotation.x = Math.PI / 2; // Point along Z axis towards head
+        arm.position.set(0, 0, 1.25);
+        attackerGroup.add(arm);
+
+        // Attacker Glove (Inverted toward head)
+        const attGloveGeom = new THREE.CapsuleGeometry(0.4, 0.5, 32, 32);
+        const attGloveMat = new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.6 });
+        const attGlove = new THREE.Mesh(attGloveGeom, attGloveMat);
+        attGlove.rotation.x = Math.PI / 2; // Striking surface pointing directly at head
+        attGlove.position.set(0, 0, -0.4); // End of arm
+        attackerGroup.add(attGlove);
+
+        const startZ = 4.5;
+        const impactZ = 2.1; // Stops at guard depth
+        attackerGroup.position.set(0, -0.1, startZ);
+        scene.add(attackerGroup);
+
+        // --- Core Physics & UI Logic ---
+
+        function updateMetricsUI(idle = false) {
+            // Update Base Values
+            valForce.textContent = state.force + ' N';
+            valGuard.textContent = state.guardEff + ' %';
+            valStiff.textContent = state.stiffness.toFixed(1) + ' kPa';
+            
+            // Calc Wave Speed: c = sqrt(G/rho)
+            const speed = Math.sqrt(state.stiffness);
+            mSpeed.textContent = speed.toFixed(2) + ' m/s';
+            brainUniforms.uWaveSpeed.value = speed;
+
+            if (idle) {
+                mApplied.textContent = "0.00 kN";
+                mAbsorbed.textContent = "0.00 kN";
+                mTrans.textContent = "0.00 kN";
+                mRate.textContent = "0 s⁻¹";
+                mStrain.textContent = "0.0 %";
+            } else {
+                const fApp = state.force;
+                const fAbs = fApp * (state.guardEff / 100);
+                const fTrans = fApp - fAbs;
+
+                mApplied.textContent = (fApp / 1000).toFixed(2) + ' kN';
+                mAbsorbed.textContent = (fAbs / 1000).toFixed(2) + ' kN';
+                mTrans.textContent = (fTrans / 1000).toFixed(2) + ' kN';
+
+                // Empirical Strain Rate Mapping (Bilston et al.)
+                let rate = 10 + (fTrans / 4500) * 170 * (2.4 / state.stiffness);
+                if (fTrans === 0) rate = 0;
+                rate = Math.min(250, rate); // Cap it
+                mRate.textContent = Math.round(rate) + ' s⁻¹';
+                mRate.style.color = rate > 60 ? '#ef4444' : '#34d399'; 
+
+                // Peak Strain Approximation
+                let strain = (fTrans / (state.stiffness * 1000)) * 25; // Visual scaling factor
+                mStrain.textContent = strain.toFixed(1) + ' %';
+                mStrain.style.color = strain > 15 ? '#ef4444' : '#fbbf24';
+            }
+        }
+
+        // Event Listeners for UI
+        sldForce.addEventListener('input', (e) => {
+            state.force = parseInt(e.target.value);
+            updateMetricsUI(state.animPhase === 0);
+        });
+        
+        sldGuard.addEventListener('input', (e) => {
+            state.guardEff = parseInt(e.target.value);
+            updateGuardPositions();
+            updateMetricsUI(state.animPhase === 0);
+        });
+        
+        sldStiff.addEventListener('input', (e) => {
+            state.stiffness = parseFloat(e.target.value);
+            updateMetricsUI(state.animPhase === 0);
+        });
+
+        const clock = new THREE.Clock();
+
+        btnPunch.addEventListener('click', () => {
+            if (state.animPhase !== 0) return; // Prevent spam
+            
+            state.animPhase = 1; // Start punch
+            updateMetricsUI(false); // Show calculated metrics
+            
+            const fTrans = state.force * (1 - state.guardEff / 100);
+            
+            // Map Transferred Force to max wave amplitude (0.0 to 0.15)
+            const maxAmp = (fTrans / 4500) * 0.15; 
+            state.stagedAmplitude = maxAmp;
+        });
+
+        // Initialize UI
+        updateMetricsUI(true);
+
+        // --- Render Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsedTime = clock.getElapsedTime();
+            const delta = clock.getDelta();
+
+            // Update shader time
+            brainUniforms.uTime.value = elapsedTime;
+
+            // Animation State Machine
+            if (state.animPhase === 1) {
+                // Punching inward
+                attackerGroup.position.z -= 0.20; // Punch speed
+                
+                if (attackerGroup.position.z <= impactZ) {
+                    attackerGroup.position.z = impactZ;
+                    state.animPhase = 2; // Impact reached, start retracting
+                    
+                    // Trigger wave in shader
+                    brainUniforms.uImpactTime.value = elapsedTime;
+                    brainUniforms.uMaxAmplitude.value = state.stagedAmplitude;
+                    
+                    // Slight head shake effect on impact proportional to force
+                    headGroup.position.z -= 0.05 * (state.stagedAmplitude / 0.15);
+                    setTimeout(() => { headGroup.position.z = 0; }, 50);
+                }
+            } else if (state.animPhase === 2) {
+                // Retracting outward
+                attackerGroup.position.z += 0.08; // Retract speed (slower)
+                
+                if (attackerGroup.position.z >= startZ) {
+                    attackerGroup.position.z = startZ;
+                    state.animPhase = 0; // Back to idle
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Handle Window Resize
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Start Loop
+        animate();
+
+    </script>
+</body>
+</html>

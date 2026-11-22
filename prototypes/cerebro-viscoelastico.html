@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Esfera viscoelástica golpeada por un hook</title>
+<style>
+:root{--bg:#e8edf1;--fg:#14202b;--card:#f8fafb;--mut:#5b6b78;--ac:#0e8f8a;--ln:#c5d0d8;--amb:#d98200;--blu:#2a6fdb;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1720;--fg:#e4ecf2;--card:#17222d;--mut:#8da0af;--ac:#3fd0c9;--ln:#28394a;--amb:#ffb02e;--blu:#5aa2ff}}
+:root[data-theme="dark"]{--bg:#0f1720;--fg:#e4ecf2;--card:#17222d;--mut:#8da0af;--ac:#3fd0c9;--ln:#28394a;--amb:#ffb02e;--blu:#5aa2ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{max-width:1000px;margin:0 auto;padding:14px}
+h1{font-size:20px;margin:0 0 2px;letter-spacing:-.01em}
+.sub{margin:0 0 10px;color:var(--mut);font-size:13px}
+#stage{position:relative;height:min(64vh,580px);min-height:340px;border:1px solid var(--ln);border-radius:12px;overflow:hidden;background:var(--card)}
+#c{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.box{position:absolute;padding:8px 10px;border:1px solid var(--ln);border-radius:8px;background:var(--card);background:color-mix(in srgb,var(--card) 88%,transparent);font-size:12px;pointer-events:none}
+#hud{top:8px;left:8px;display:grid;grid-template-columns:auto auto;gap:2px 12px;min-width:210px}
+#hud b{font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
+#hud span{color:var(--mut)}
+#bar{grid-column:1/3;height:8px;border-radius:4px;margin-top:6px;background:linear-gradient(90deg,#5c7388,#35b6c9 25%,#ffd34e 55%,#ff3b2f)}
+#bl{grid-column:1/3;display:flex;justify-content:space-between;color:var(--mut)}
+#chw{right:8px;bottom:8px;color:var(--mut);font-size:11px}
+#chart{display:block;width:230px;height:84px}
+.lg i{display:inline-block;width:14px;height:3px;margin:0 4px 2px 6px;border-radius:2px;vertical-align:middle}
+#ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 16px;margin:12px 0;align-items:end}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mut)}
+label b{color:var(--fg);font-weight:600}
+label.ck{flex-direction:row;align-items:center;gap:8px;color:var(--fg)}
+select,input[type=range]{width:100%;font:inherit;color:var(--fg)}
+select{padding:6px;border:1px solid var(--ln);border-radius:8px;background:var(--card)}
+button{font:inherit;padding:9px 14px;border-radius:8px;border:1px solid var(--ac);background:var(--ac);color:#04201f;font-weight:600;cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.note{font-size:12px;color:var(--mut);margin:6px 0 0;max-width:80ch}
+</style>
+</head>
+<body>
+<div id="app">
+<h1>Esfera viscoelástica bajo un hook</h1>
+<p class="sub">El guante golpea la esfera directamente. Arrastra para rotar y usa la rueda o el pellizco para acercar.</p>
+<div id="stage">
+<canvas id="c"></canvas>
+<div id="hud" class="box">
+<span>Fuerza pico</span><b id="h_F">–</b>
+<span>Deformación máxima</span><b id="h_s">–</b>
+<span>Tiempo desde el impacto</span><b id="h_t">–</b>
+<div id="bar"></div><div id="bl"><span>baja</span><span id="cl">Deformación local</span><span>alta</span></div>
+</div>
+<div id="chw" class="box"><canvas id="chart" width="460" height="168"></canvas><div class="lg"><i style="background:var(--amb)"></i>fuerza<i style="background:var(--blu)"></i>deformación media</div></div>
+</div>
+<div id="ctl">
+<button id="go">Lanzar golpe</button>
+<label>Velocidad del puño: <b id="pwv">9 m/s</b><input id="pw" type="range" min="5" max="14" step="0.5" value="9"></label>
+<label>Viscosidad: <b id="viv">25</b><input id="vi" type="range" min="0" max="100" step="1" value="25"></label>
+<label>Rigidez: <b id="kv">1.0×</b><input id="kk" type="range" min="0.5" max="2" step="0.1" value="1"></label>
+<label>Colorear por<select id="cm"><option value="s">Deformación</option><option value="f">Esfuerzo (elástico + viscoso)</option></select></label>
+<label>Cámara lenta en el impacto<select id="ts"><option value="1">Tiempo real</option><option value="0.1">1/10</option><option value="0.03" selected>1/30</option><option value="0.01">1/100</option></select></label>
+<label class="ck"><input id="cut" type="checkbox" checked>Corte transversal</label>
+</div>
+<p class="note">Cada resorte con amortiguador en paralelo (modelo de Kelvin-Voigt) forma una malla de tres capas concéntricas. Con poca viscosidad la esfera vibra como gelatina y la onda rebota; con mucha, la onda se disipa y la esfera recupera su forma más despacio. La deformación es cuánto se estira o comprime cada zona; el esfuerzo suma además la parte viscosa, que depende de la rapidez del cambio. Modelo didáctico con valores ilustrativos: la esfera de 7 cm representa el cerebro.</p>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+const $=id=>document.getElementById(id), V3=THREE.Vector3;
+const cv=$('c'), stage=$('stage'), ch=$('chart');
+const rd=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+rd.setPixelRatio(Math.min(devicePixelRatio,2)); rd.localClippingEnabled=true;
+const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(40,1,.05,50);
+scene.add(new THREE.HemisphereLight(0xffffff,0x556070,.85));
+const dl=new THREE.DirectionalLight(0xffffff,.9); dl.position.set(1,2,3); scene.add(dl);
+
+/* malla: tres capas concéntricas con la misma triangulación */
+const ico=new THREE.IcosahedronGeometry(1,5), pa=ico.attributes.position.array;
+const map=new Map(), dirs=[], tri=[];
+for(let i=0;i<pa.length;i+=3){
+  const k=Math.round(pa[i]*1e3)+','+Math.round(pa[i+1]*1e3)+','+Math.round(pa[i+2]*1e3);
+  let id=map.get(k); if(id===undefined){id=dirs.length;map.set(k,id);dirs.push([pa[i],pa[i+1],pa[i+2]]);} tri.push(id);
+}
+const N=dirs.length, NN=N*3, seen=new Set(), ed=[];
+for(let i=0;i<tri.length;i+=3)for(let j=0;j<3;j++){const a=tri[i+j],b=tri[i+(j+1)%3],k=a<b?a*N+b:b*N+a;if(!seen.has(k)){seen.add(k);ed.push([a,b]);}}
+const RS=[1,.66,.33], p0=new Float64Array(NN*3), ea=[], eb=[];
+for(let s=0;s<3;s++)for(let i=0;i<N;i++)for(let c=0;c<3;c++)p0[(s*N+i)*3+c]=dirs[i][c]*RS[s];
+const add=(a,b)=>{ea.push(a);eb.push(b);};
+ed.forEach(([a,b])=>{for(let s=0;s<3;s++)add(s*N+a,s*N+b);for(let s=0;s<2;s++){add(s*N+a,(s+1)*N+b);add(s*N+b,(s+1)*N+a);}});
+for(let i=0;i<N;i++)for(let s=0;s<2;s++)add(s*N+i,(s+1)*N+i);
+const NE=ea.length, EA=Int32Array.from(ea), EB=Int32Array.from(eb), L0=new Float64Array(NE), DEG=new Float64Array(NN);
+for(let e=0;e<NE;e++){const a=EA[e]*3,b=EB[e]*3;L0[e]=Math.hypot(p0[b]-p0[a],p0[b+1]-p0[a+1],p0[b+2]-p0[a+2]);DEG[EA[e]]++;DEG[EB[e]]++;}
+const p=new Float64Array(NN*3), v=new Float64Array(NN*3), f=new Float64Array(NN*3), ST=new Float64Array(NE), SG=new Float64Array(NE), acc=new Float64Array(NN);
+
+/* objetos 3D */
+const pl1=new THREE.Plane(new V3(0,0,-1),0), pl2=new THREE.Plane(new V3(0,0,1),.4);
+const mgeo=new THREE.BufferGeometry(); mgeo.setIndex(tri);
+mgeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(N*3),3));
+mgeo.setAttribute('color',new THREE.BufferAttribute(new Float32Array(N*3),3));
+const mesh=new THREE.Mesh(mgeo,new THREE.MeshStandardMaterial({vertexColors:true,side:THREE.DoubleSide,roughness:.55,metalness:.05,clippingPlanes:[pl1]})); scene.add(mesh);
+const pgeo=new THREE.BufferGeometry();
+pgeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(N*6),3));
+pgeo.setAttribute('color',new THREE.BufferAttribute(new Float32Array(N*6),3));
+const pts=new THREE.Points(pgeo,new THREE.PointsMaterial({size:.085,vertexColors:true,clippingPlanes:[pl1,pl2]})); pts.frustumCulled=false; scene.add(pts);
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(1,24,16),new THREE.MeshBasicMaterial({color:0x8899aa,wireframe:true,transparent:true,opacity:.2,clippingPlanes:[pl1]})));
+const GR=.55, CX=1+GR, RA=6, PHI0=1.1, SP=new V3(CX,0,RA);
+const gl=new THREE.Group(); scene.add(gl);
+const mt=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:.5});
+gl.add(new THREE.Mesh(new THREE.SphereGeometry(GR,28,20),mt(0xc62828)));
+const cuff=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.5,20),mt(0xeeeeee)); cuff.rotation.x=Math.PI/2; cuff.position.z=.75; gl.add(cuff);
+const fa=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,3.5,16),mt(0xd2a083)); fa.rotation.x=Math.PI/2; fa.position.z=2.75; gl.add(fa);
+
+/* física: unidades de la malla = 7 cm, tiempo en segundos */
+const D=5e-5, RM=.07, FN=1.4/NN*RM;
+let P={}, S={}, K=1e6, CE=0, KA=0, CA=0;
+function gp(t,o){
+  if(t<P.tc){const ph=PHI0*(1-(t/P.tc)**2);o.set(CX+RA*Math.sin(ph),0,RA*(1-Math.cos(ph)));}
+  else if(t<P.te){o.set(CX-P.del*Math.sin(Math.PI*(t-P.tc)/P.tp),0,0);}
+  else{const u=Math.min(1,(t-P.te)/.12),ph=.9*u*u*(3-2*u);o.set(CX+RA*Math.sin(ph),0,RA*(1-Math.cos(ph)));}
+  return o;
+}
+function configure(){
+  const vm=+$('pw').value, vr=vm/RM, del=.03*vm;
+  K=1e6*(+$('kk').value); CE=(.02+.78*(+$('vi').value)/100)*Math.sqrt(2*K); KA=.02*K; CA=.6*Math.sqrt(KA);
+  const tp=Math.PI*del/vr, tc=2*PHI0*RA/vr;
+  P={tc,tp,te:tc+tp,del};
+  p.set(p0); v.fill(0); ST.fill(0); SG.fill(0);
+  S={t:0,on:false,rem:0,n:0,g0:new V3(),g1:new V3(),pk:{F:0,s:0},cf:[],cs:[]};
+  $('pwv').textContent=vm+' m/s'; $('viv').textContent=$('vi').value; $('kv').textContent=(+$('kk').value).toFixed(1)+'×';
+  draw();
+}
+function step(){
+  const t=S.t; f.fill(0);
+  for(let i=0;i<NN*3;i++)f[i]=-KA*(p[i]-p0[i])-CA*v[i];
+  let sm=0,mx=S.pk.s;
+  for(let e=0;e<NE;e++){
+    const a=EA[e]*3,b=EB[e]*3,dx=p[b]-p[a],dy=p[b+1]-p[a+1],dz=p[b+2]-p[a+2];
+    const L=Math.sqrt(dx*dx+dy*dy+dz*dz)||1e-9,ux=dx/L,uy=dy/L,uz=dz/L,x=L-L0[e];
+    const fe=K*x+CE*((v[b]-v[a])*ux+(v[b+1]-v[a+1])*uy+(v[b+2]-v[a+2])*uz), s=x/L0[e], as=s<0?-s:s;
+    ST[e]=s; SG[e]=fe/(K*L0[e]); sm+=as; if(as>mx)mx=as;
+    f[a]+=fe*ux;f[a+1]+=fe*uy;f[a+2]+=fe*uz;f[b]-=fe*ux;f[b+1]-=fe*uy;f[b+2]-=fe*uz;
+  }
+  for(let i=0;i<NN*3;i++){v[i]+=f[i]*D;p[i]+=v[i]*D;}
+  const g0=gp(t,S.g0),g1=gp(t+D,S.g1),gx=(g1.x-g0.x)/D,gy=(g1.y-g0.y)/D,gz=(g1.z-g0.z)/D;
+  let F=0;
+  for(let n=0;n<NN;n++){
+    const i=n*3; if(p[i]<.1)continue;
+    const dx=p[i]-g1.x,dy=p[i+1]-g1.y,dz=p[i+2]-g1.z,d2=dx*dx+dy*dy+dz*dz;
+    if(d2<GR*GR){
+      const d=Math.sqrt(d2)||1e-9,nx=dx/d,ny=dy/d,nz=dz/d;
+      p[i]=g1.x+nx*GR;p[i+1]=g1.y+ny*GR;p[i+2]=g1.z+nz*GR;
+      const dv=(gx*nx+gy*ny+gz*nz)-(v[i]*nx+v[i+1]*ny+v[i+2]*nz);
+      if(dv>0){v[i]+=dv*nx;v[i+1]+=dv*ny;v[i+2]+=dv*nz;}
+      const fn=-(f[i]*nx+f[i+1]*ny+f[i+2]*nz); if(fn>0)F+=fn;
+    }
+  }
+  S.t+=D; S.pk.s=mx; if(F>S.pk.F)S.pk.F=F;
+  if(S.t>=P.tc-.005&&(S.n++%20===0)){S.cf.push(F);S.cs.push(sm/NE);}
+}
+
+/* color */
+const RAMP=[[0,.36,.45,.53],[.25,.21,.71,.79],[.55,1,.83,.31],[1,1,.23,.18]], FS=.15, col=[0,0,0];
+function ramp(u){let k=0;while(k<2&&u>RAMP[k+1][0])k++;const a=RAMP[k],b=RAMP[k+1],w=(u-a[0])/(b[0]-a[0]);for(let c=0;c<3;c++)col[c]=a[c+1]+(b[c+1]-a[c+1])*w;}
+function draw(){
+  const arr=$('cm').value==='s'?ST:SG; acc.fill(0);
+  for(let e=0;e<NE;e++){const a=Math.abs(arr[e]);acc[EA[e]]+=a;acc[EB[e]]+=a;}
+  const mp=mgeo.attributes.position.array,mc=mgeo.attributes.color.array,pp=pgeo.attributes.position.array,pc=pgeo.attributes.color.array;
+  for(let n=0;n<NN;n++){
+    ramp(Math.min(1,acc[n]/DEG[n]/FS));
+    const i=n*3; if(n<N){for(let c=0;c<3;c++){mp[i+c]=p[i+c];mc[i+c]=col[c];}} else {const j=i-N*3;for(let c=0;c<3;c++){pp[j+c]=p[i+c];pc[j+c]=col[c];}}
+  }
+  mgeo.attributes.position.needsUpdate=mgeo.attributes.color.needsUpdate=pgeo.attributes.position.needsUpdate=pgeo.attributes.color.needsUpdate=true;
+  mgeo.computeVertexNormals();
+  gp(Math.min(S.t,1e3),gl.position); gl.lookAt(SP);
+  $('h_F').textContent=S.pk.F?(S.pk.F*FN).toFixed(0)+' N':'–';
+  $('h_s').textContent=S.pk.s?(S.pk.s*100).toFixed(0)+' %':'–';
+  $('h_t').textContent=S.t>P.tc-.005?((S.t-P.tc)*1000).toFixed(1)+' ms':'–';
+  $('cl').textContent=$('cm').value==='s'?'Deformación local':'Esfuerzo local';
+  chart();
+}
+function chart(){
+  const c=ch.getContext('2d'),W=ch.width,H=ch.height,cs=getComputedStyle(document.documentElement),mut=cs.getPropertyValue('--mut')||'#888';
+  c.clearRect(0,0,W,H);c.strokeStyle=mut;c.globalAlpha=.5;c.beginPath();c.moveTo(0,H-22);c.lineTo(W,H-22);c.stroke();c.globalAlpha=1;
+  const line=(a,cl)=>{const mx=Math.max(1e-9,...a);c.strokeStyle=cl;c.lineWidth=3;c.beginPath();a.forEach((y,i)=>{const X=i*20*D/.3*W,Y=H-24-(y/mx)*(H-40);i?c.lineTo(X,Y):c.moveTo(X,Y);});c.stroke();};
+  line(S.cf,cs.getPropertyValue('--amb')||'#d98200');line(S.cs,cs.getPropertyValue('--blu')||'#2a6fdb');
+  c.fillStyle=mut;c.font='20px system-ui';c.fillText('0',2,H-4);c.fillText('0.3 s',W-60,H-4);
+}
+function fire(){configure();S.on=true;S.t=0;$('go').textContent='Repetir golpe';}
+
+/* cámara orbital */
+let az=.12,el=.1,dist=5.2; const tgt=new V3(.5,0,0);
+const setCam=()=>{cam.position.set(tgt.x+dist*Math.sin(az)*Math.cos(el),tgt.y+dist*Math.sin(el),tgt.z+dist*Math.cos(az)*Math.cos(el));cam.lookAt(tgt);};
+const ptr=new Map(); let pd=0;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);});
+cv.addEventListener('pointermove',e=>{
+  const o=ptr.get(e.pointerId); if(!o)return; const dx=e.clientX-o[0],dy=e.clientY-o[1]; ptr.set(e.pointerId,[e.clientX,e.clientY]);
+  if(ptr.size===1){az-=dx*.008;el=Math.max(-1.2,Math.min(1.5,el+dy*.006));}
+  else if(ptr.size===2){const [a,b]=[...ptr.values()],n=Math.hypot(a[0]-b[0],a[1]-b[1]);if(pd)dist=Math.max(2,Math.min(12,dist*pd/n));pd=n;}
+  setCam();
+});
+['pointerup','pointercancel'].forEach(n=>cv.addEventListener(n,e=>{ptr.delete(e.pointerId);pd=0;}));
+cv.addEventListener('wheel',e=>{e.preventDefault();dist=Math.max(2,Math.min(12,dist*(1+e.deltaY*.001)));setCam();},{passive:false});
+const rs=()=>{const r=stage.getBoundingClientRect();rd.setSize(r.width,r.height,false);cam.aspect=r.width/r.height;cam.updateProjectionMatrix();};
+new ResizeObserver(rs).observe(stage);rs();setCam();
+
+$('go').onclick=fire;
+['pw','vi','kk'].forEach(id=>$(id).oninput=configure);
+$('cm').onchange=draw;
+$('cut').onchange=()=>{const c=$('cut').checked;rd.localClippingEnabled=c;pts.visible=c;mesh.material.needsUpdate=true;};
+$('cut').onchange();
+configure();setTimeout(fire,600);
+let last=performance.now();
+(function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(S.on){
+    const t0=P.tc-.004;
+    if(S.t<t0)S.t=Math.min(t0,S.t+dt);
+    else{
+      const slow=S.t<P.tc+.15,a=dt*(slow?+$('ts').value:1)+S.rem,n=Math.min(250,Math.floor(a/D));
+      S.rem=Math.min(D,a-n*D);for(let i=0;i<n;i++)step();
+      if(S.t>P.tc+.3)S.on=false;
+    }
+  }
+  draw();rd.render(scene,cam);requestAnimationFrame(frame);
+})(performance.now());
+})();
+</script>
+</body>
+</html>

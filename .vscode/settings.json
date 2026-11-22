@@ -1,0 +1,14 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "files.eol": "\n",
+  "js.implicitProjectConfig.checkJs": true,
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "references/papers": true
+  }
+}

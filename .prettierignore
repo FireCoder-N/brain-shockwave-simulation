@@ -1,0 +1,8 @@
+dist/
+coverage/
+node_modules/
+package-lock.json
+# Archived prototypes are kept byte-for-byte as received.
+prototypes/
+references/papers/
+references/references.bib

@@ -1,0 +1,48 @@
+{
+  "name": "brain-shockwave-simulation",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Interactive web simulations of shockwave propagation through the brain.",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://firecoder-n.github.io/brain-shockwave-simulation/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FireCoder-N/brain-shockwave-simulation.git"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run lint && npm run format:check && npm run test && npm run build",
+    "refs:sync": "node scripts/sync-references.mjs",
+    "refs:check": "node scripts/sync-references.mjs --dry-run"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@vitejs/plugin-react": "^6.3.0",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.8",
+    "globals": "^17.14.0",
+    "pdfjs-dist": "^6.5.438",
+    "prettier": "^3.10.1",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
+}

@@ -1,0 +1,38 @@
+# --- Dependencies ---
+node_modules/
+
+# --- Build output ---
+dist/
+dist-ssr/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# --- Logs ---
+logs/
+*.log
+npm-debug.log*
+
+# --- Environment / secrets ---
+.env
+.env.*
+!.env.example
+*.local
+
+# --- Reference material (copyrighted, kept local only) ---
+# PDFs live here on each machine; only references.bib and notes/ are committed.
+references/papers/*
+!references/papers/.gitkeep
+
+# --- Editors / OS ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- AI assistant local state ---
+.claude/settings.local.json

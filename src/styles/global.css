@@ -1,0 +1,11 @@
+/* Minimal reset only. Visual design (colors, typography, layout) is pending design decisions. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
