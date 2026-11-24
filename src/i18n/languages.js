@@ -5,7 +5,7 @@
 export const LANGUAGES = [
   { code: 'en', name: 'English', short: 'EN' },
   { code: 'es', name: 'Español', short: 'ES' },
-  { code: 'pt-BR', name: 'Português (Brasil)', short: 'PT' },
+  { code: 'pt-BR', name: 'Português', short: 'PT' },
   { code: 'el', name: 'Ελληνικά', short: 'ΕΛ' },
   { code: 'sr', name: 'Српски', short: 'СР' },
 ];
