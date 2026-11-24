@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  HEAD_RADIUS,
   PARAMETERS,
   PRESETS,
   defaultValues,
@@ -28,14 +29,28 @@ describe('parameter definitions', () => {
       }
     }
   });
+
+  it('the largest offset still hits the head', () => {
+    const offset = /** @type {import('./parameters.js').ParameterDef} */ (
+      PARAMETERS.find((p) => p.id === 'offset')
+    );
+    expect(offset.max * offset.scale).toBeLessThan(HEAD_RADIUS);
+  });
 });
 
 describe('toSI', () => {
   it('converts display units to SI', () => {
-    const si = toSI({ ...defaultValues(), shearModulus: 2.4, guard: 50, impactAngle: 90 });
+    const si = toSI({
+      ...defaultValues(),
+      shearModulus: 2.4,
+      guard: 50,
+      impactPolar: 90,
+      offset: 3,
+    });
     expect(si.shearModulus).toBeCloseTo(2400); // kPa → Pa
     expect(si.guard).toBeCloseTo(0.5); // % → fraction
-    expect(si.impactAngle).toBeCloseTo(Math.PI / 2); // ° → rad
+    expect(si.impactPolar).toBeCloseTo(Math.PI / 2); // ° → rad
+    expect(si.offset).toBeCloseTo(0.03); // cm → m
   });
 });
 

@@ -1,21 +1,27 @@
+import { useTranslation } from 'react-i18next';
+
 /**
- * Shared frame for text pages (Project, Team): readable width, page title and lead paragraph.
+ * Shared frame for simple text pages (Team): readable width, page title and lead paragraph.
  *
  * @param {object} props
  * @param {string} props.eyebrow
  * @param {string} props.title
  * @param {import('react').ReactNode} props.lead
+ * @param {boolean} [props.draft]  Show the "draft content" notice.
  * @param {import('react').ReactNode} props.children
  */
-export default function ContentPage({ eyebrow, title, lead, children }) {
+export default function ContentPage({ eyebrow, title, lead, draft = false, children }) {
+  const { t } = useTranslation();
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:py-16">
       <p className="text-sm font-semibold tracking-wider text-accent uppercase">{eyebrow}</p>
       <h1 className="mt-2 text-4xl font-bold sm:text-5xl">{title}</h1>
       <p className="mt-4 text-lg text-muted">{lead}</p>
-      <p className="mt-6 rounded-lg border border-dashed border-line px-3 py-2 text-xs text-muted">
-        Draft content: placeholder text, to be written by the team.
-      </p>
+      {draft && (
+        <p className="mt-6 rounded-lg border border-dashed border-line px-3 py-2 text-xs text-muted">
+          {t('common.draft')}
+        </p>
+      )}
       <div className="mt-12 space-y-14">{children}</div>
     </div>
   );

@@ -1,66 +1,77 @@
-import ContentPage from '../components/ContentPage.jsx';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import 'katex/dist/katex.min.css';
+import TableOfContents from '../components/project/TableOfContents.jsx';
+import MarkdownArticle from '../components/project/MarkdownArticle.jsx';
 import Sources from '../components/Sources.jsx';
+import { loadArticles } from '../components/project/articles.js';
+import { extractHeadings } from '../components/project/headings.js';
 
-const STEPS = [
-  { title: 'Choose a model', text: 'Start with a simple sphere or a two-lobe brain.' },
-  {
-    title: 'Set the impact',
-    text: 'Pick a preset or tune punch speed, guard and tissue properties.',
-  },
-  { title: 'Strike', text: 'Watch the shockwave travel through the tissue in slow motion.' },
-  { title: 'Read the results', text: 'Compare peak force, strain and pressure in the statistics.' },
-];
-
-/** @param {{ title: string, children: import('react').ReactNode }} props */
-function Section({ title, children }) {
-  return (
-    <section>
-      <h2 className="text-2xl font-semibold">{title}</h2>
-      <div className="mt-3 space-y-3 leading-relaxed text-muted">{children}</div>
-    </section>
-  );
-}
-
+/**
+ * Wikipedia-style project page: Markdown articles (src/content/project/<lang>/) with a sticky
+ * contents sidebar, followed by the bibliography. Loaded lazily (KaTeX + Markdown are large).
+ */
 export default function ProjectPage() {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage ?? 'en';
+  const [loaded, setLoaded] = useState(
+    /** @type {{ lang: string, articles: import('../components/project/articles.js').Article[] } | null} */ (
+      null
+    ),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    loadArticles(lang).then((articles) => {
+      if (!cancelled) setLoaded({ lang, articles });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [lang]);
+
+  const articles = loaded?.lang === lang ? loaded.articles : null;
+  const sourcesTitle = t('project.sources');
+  const headings = useMemo(
+    () => [
+      ...(articles ?? []).flatMap((a) => extractHeadings(a.markdown)),
+      { level: /** @type {const} */ (2), text: sourcesTitle, id: 'sources' },
+    ],
+    [articles, sourcesTitle],
+  );
+
   return (
-    <ContentPage
-      eyebrow="The project"
-      title="What happens inside the head on impact?"
-      lead="An interactive simulation of how a shockwave from a blow travels through brain tissue."
-    >
-      <Section title="Inspiration">
-        <p>
-          Placeholder: what motivated the project, e.g. head impacts in combat sports and how little
-          of their effect on the brain is visible from the outside.
-        </p>
-      </Section>
+    <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:py-14 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-12">
+      <aside>
+        <TableOfContents headings={headings} title={t('project.contents')} />
+      </aside>
 
-      <Section title="Goal">
-        <p>
-          Placeholder: make the mechanics of brain injury visible and explorable for students and
-          the public, while staying grounded in published biomechanics research.
-        </p>
-      </Section>
+      <article className="min-w-0 max-w-3xl">
+        <h1 className="text-4xl font-bold sm:text-5xl">{t('project.title')}</h1>
+        {!articles && <p className="mt-6 text-muted">{t('common.loading')}</p>}
+        {articles?.map((a) => (
+          <section key={a.name} lang={a.translated ? undefined : 'en'}>
+            {!a.translated && (
+              <p className="mt-10 rounded-lg border border-dashed border-line px-3 py-2 text-xs text-muted">
+                {t('project.untranslated')}
+              </p>
+            )}
+            <MarkdownArticle markdown={a.markdown} />
+          </section>
+        ))}
 
-      <Section title="How it works">
-        <ol className="grid gap-3 sm:grid-cols-2">
-          {STEPS.map((step, i) => (
-            <li key={step.title} className="rounded-xl border border-line bg-surface p-4">
-              <span className="font-display text-sm font-semibold text-accent">0{i + 1}</span>
-              <h3 className="mt-1 font-semibold text-fg">{step.title}</h3>
-              <p className="mt-1 text-sm">{step.text}</p>
-            </li>
-          ))}
-        </ol>
-        <p>
-          Under the hood, brain tissue is modeled as a viscoelastic material: a network of springs
-          (elasticity) and dampers (viscosity), the Kelvin–Voigt model used in our first prototypes.
-        </p>
-      </Section>
-
-      <Section title="Sources">
-        <Sources />
-      </Section>
-    </ContentPage>
+        <section>
+          <h2
+            id="sources"
+            className="mt-14 scroll-mt-20 border-b border-line pb-2 text-3xl font-semibold"
+          >
+            {sourcesTitle}
+          </h2>
+          <div className="mt-4">
+            <Sources />
+          </div>
+        </section>
+      </article>
+    </div>
   );
 }

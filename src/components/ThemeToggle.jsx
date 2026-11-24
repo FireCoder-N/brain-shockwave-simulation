@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /** @typedef {'light' | 'dark'} Theme */
 
@@ -30,6 +31,7 @@ function applyTheme(theme) {
  * Until the visitor clicks, the site keeps following OS changes live.
  */
 export default function ThemeToggle() {
+  const { t } = useTranslation();
   const [theme, setTheme] = useState(currentTheme);
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function ThemeToggle() {
     }
   };
 
-  const label = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+  const label = theme === 'dark' ? t('theme.toLight') : t('theme.toDark');
   return (
     <button
       type="button"

@@ -1,4 +1,7 @@
 import { useId } from 'react';
+import { useTranslation } from 'react-i18next';
+import InfoTip from './InfoTip.jsx';
+import { formatNumber } from '../i18n/format.js';
 
 /** Decimal places implied by a slider step (0.5 → 1, 0.1 → 1, 5 → 0). @param {number} step */
 function decimals(step) {
@@ -7,7 +10,7 @@ function decimals(step) {
 }
 
 /**
- * Labeled range slider with live value readout.
+ * Labeled range slider with live value readout and an ⓘ explanation.
  *
  * @param {object} props
  * @param {string} props.label
@@ -31,17 +34,24 @@ export default function Slider({
   onChange,
   description,
 }) {
+  const { t, i18n } = useTranslation();
   const id = useId();
   const descId = `${id}-desc`;
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={id} className="text-sm font-medium">
-          {label}
-          {symbol && <span className="ml-1.5 font-normal text-muted italic">{symbol}</span>}
-        </label>
-        <output htmlFor={id} className="text-sm font-semibold text-accent tabular-nums">
-          {value.toFixed(decimals(step))}
+    <div className="space-y-1">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-1">
+          <label htmlFor={id} className="truncate text-sm font-medium">
+            {label}
+            {/* Serif italic, like math notation: Inter's italic θ and d read as "6" and "a". */}
+            {symbol && (
+              <span className="ml-1.5 font-serif font-normal text-muted italic">{symbol}</span>
+            )}
+          </label>
+          {description && <InfoTip text={description} label={t('panel.about', { name: label })} />}
+        </div>
+        <output htmlFor={id} className="shrink-0 text-sm font-semibold text-accent tabular-nums">
+          {formatNumber(value, decimals(step), i18n.language)}
           {unit && <span className="ml-1 font-normal text-muted">{unit}</span>}
         </output>
       </div>
@@ -57,9 +67,9 @@ export default function Slider({
         className="w-full accent-accent"
       />
       {description && (
-        <p id={descId} className="text-xs text-muted">
+        <span id={descId} className="sr-only">
           {description}
-        </p>
+        </span>
       )}
     </div>
   );

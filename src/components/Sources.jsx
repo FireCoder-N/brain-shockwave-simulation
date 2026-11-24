@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import bibText from '../../references/references.bib?raw';
 import { parseEntries, plain } from '../../scripts/lib/bibtex.mjs';
 
@@ -17,8 +18,9 @@ function authors(/** @type {string | undefined} */ field) {
 }
 
 export default function Sources() {
+  const { t } = useTranslation();
   if (ENTRIES.length === 0) {
-    return <p>No sources added yet.</p>;
+    return <p className="text-muted">{t('project.noSources')}</p>;
   }
   return (
     <ol className="space-y-3 text-sm">

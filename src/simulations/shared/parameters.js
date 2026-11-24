@@ -1,5 +1,7 @@
 /**
  * Parameter definitions for the simulation UI. The parameter panel is generated from this data.
+ * Labels and descriptions are translated: see `params.<id>.label` / `.description` and
+ * `groups.<id>` in src/i18n/locales/*.json.
  *
  * Values in the UI are in DISPLAY units (e.g. kPa). `scale` converts to SI: si = display × scale.
  * Convert with `toSI()` at the boundary to the physics engine.
@@ -10,8 +12,7 @@
 
 /**
  * @typedef {object} ParameterDef
- * @property {string} id
- * @property {string} label        Plain-language name (audience: public + students).
+ * @property {string} id           Also the translation key: params.<id>.label / .description
  * @property {string} [symbol]     Physics symbol, shown next to the label.
  * @property {string} unit         Display unit ('' for dimensionless).
  * @property {number} scale        Multiply a display value by this to get SI.
@@ -19,26 +20,27 @@
  * @property {number} max
  * @property {number} step
  * @property {number} default
- * @property {string} description  One-sentence explanation shown under the slider.
  * @property {boolean} [advanced]  Hidden unless "Show advanced" is on.
  */
 
 /**
  * @typedef {object} ParameterGroup
- * @property {string} id
- * @property {string} label
+ * @property {string} id  Translation key: groups.<id>
  * @property {ParameterDef[]} params
  */
+
+const DEG = Math.PI / 180;
+
+/** Radius of the spherical head model [m]. PROVISIONAL. */
+export const HEAD_RADIUS = 0.075;
 
 /** @type {ParameterGroup[]} */
 export const PARAMETER_GROUPS = [
   {
     id: 'impact',
-    label: 'Impact',
     params: [
       {
         id: 'punchSpeed',
-        label: 'Punch speed',
         symbol: 'v',
         unit: 'm/s',
         scale: 1,
@@ -46,22 +48,42 @@ export const PARAMETER_GROUPS = [
         max: 15,
         step: 0.5,
         default: 8,
-        description: 'How fast the fist is moving when it hits.',
+      },
+      { id: 'guard', unit: '%', scale: 0.01, min: 0, max: 100, step: 5, default: 50 },
+      {
+        id: 'impactPolar',
+        symbol: 'θ',
+        unit: '°',
+        scale: DEG,
+        min: 0,
+        max: 180,
+        step: 5,
+        default: 90,
       },
       {
-        id: 'guard',
-        label: 'Guard',
-        unit: '%',
-        scale: 0.01,
+        id: 'impactAzimuth',
+        symbol: 'φ',
+        unit: '°',
+        scale: DEG,
         min: 0,
-        max: 100,
+        max: 360,
         step: 5,
-        default: 50,
-        description: 'How much of the blow is absorbed by blocking.',
+        default: 90,
+      },
+      { id: 'offset', symbol: 'd', unit: 'cm', scale: 0.01, min: 0, max: 6, step: 0.5, default: 0 },
+      {
+        id: 'offsetDirection',
+        symbol: 'ψ',
+        unit: '°',
+        scale: DEG,
+        min: 0,
+        max: 360,
+        step: 15,
+        default: 0,
+        advanced: true,
       },
       {
         id: 'fistMass',
-        label: 'Effective fist mass',
         symbol: 'm',
         unit: 'kg',
         scale: 1,
@@ -69,31 +91,15 @@ export const PARAMETER_GROUPS = [
         max: 3,
         step: 0.1,
         default: 1.2,
-        description: 'Mass of the fist and arm that takes part in the impact.',
-        advanced: true,
-      },
-      {
-        id: 'impactAngle',
-        label: 'Impact angle',
-        symbol: 'θ',
-        unit: '°',
-        scale: Math.PI / 180,
-        min: -90,
-        max: 90,
-        step: 5,
-        default: 0,
-        description: 'Direction of the blow; 0° hits the side of the head straight on.',
         advanced: true,
       },
     ],
   },
   {
     id: 'tissue',
-    label: 'Brain tissue',
     params: [
       {
         id: 'shearModulus',
-        label: 'Stiffness',
         symbol: 'G',
         unit: 'kPa',
         scale: 1e3,
@@ -101,11 +107,9 @@ export const PARAMETER_GROUPS = [
         max: 10,
         step: 0.1,
         default: 2.4,
-        description: 'Resistance to shape change. Softer tissue deforms more.',
       },
       {
         id: 'viscosity',
-        label: 'Viscosity',
         symbol: 'η',
         unit: 'Pa·s',
         scale: 1,
@@ -113,11 +117,9 @@ export const PARAMETER_GROUPS = [
         max: 20,
         step: 0.5,
         default: 5,
-        description: 'Internal friction. Higher values damp the wave faster.',
       },
       {
         id: 'density',
-        label: 'Density',
         symbol: 'ρ',
         unit: 'kg/m³',
         scale: 1,
@@ -125,36 +127,22 @@ export const PARAMETER_GROUPS = [
         max: 1100,
         step: 5,
         default: 1040,
-        description: 'Mass per volume of the tissue.',
         advanced: true,
       },
     ],
   },
   {
     id: 'model',
-    label: 'Model',
     params: [
-      {
-        id: 'layers',
-        label: 'Tissue layers',
-        unit: '',
-        scale: 1,
-        min: 1,
-        max: 5,
-        step: 1,
-        default: 3,
-        description: 'Number of concentric layers the brain is divided into.',
-      },
+      { id: 'layers', unit: '', scale: 1, min: 1, max: 5, step: 1, default: 3 },
       {
         id: 'resolution',
-        label: 'Mesh resolution',
         unit: '',
         scale: 1,
         min: 8,
         max: 64,
         step: 8,
-        default: 24,
-        description: 'Points per layer. Higher is more detailed but slower.',
+        default: 32,
         advanced: true,
       },
     ],
@@ -181,13 +169,26 @@ export function toSI(values) {
 }
 
 /**
- * Presets for non-expert visitors. Values are display units; unspecified parameters use defaults.
- * PROVISIONAL placeholder values (see file header).
- * @type {{ id: string, label: string, values: Partial<ParameterValues> }[]}
+ * Presets for non-expert visitors (translation key: presets.<id>). Display units; unspecified
+ * parameters use defaults. PROVISIONAL placeholder values (see file header).
+ * @type {{ id: string, values: Partial<ParameterValues> }[]}
  */
 export const PRESETS = [
-  { id: 'jab', label: 'Jab', values: { punchSpeed: 6, fistMass: 0.9, guard: 50 } },
-  { id: 'hook', label: 'Heavy hook', values: { punchSpeed: 11, fistMass: 1.8, guard: 20 } },
+  {
+    id: 'jab',
+    values: { punchSpeed: 6, fistMass: 0.9, guard: 50, impactPolar: 80, impactAzimuth: 0 },
+  },
+  {
+    id: 'hook',
+    values: {
+      punchSpeed: 11,
+      fistMass: 1.8,
+      guard: 20,
+      impactPolar: 90,
+      impactAzimuth: 90,
+      offset: 3,
+    },
+  },
 ];
 
 /** @param {string} presetId @returns {ParameterValues} */
