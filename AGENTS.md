@@ -27,6 +27,13 @@ through the brain** (e.g. head impacts, blast loading). Simulations run entirely
 - **React Router (HashRouter)**: URLs look like `/#/simulations`. Required because GitHub Pages
   has no server rewrites. Do not switch to BrowserRouter.
 - **Node 24 / npm** (see `.nvmrc`). Use `npm`, not pnpm or yarn.
+- **Tailwind CSS v4** (via `@tailwindcss/vite`); fonts Inter (body) + Space Grotesk (headings),
+  self-hosted via `@fontsource-variable`.
+- **3D:** three.js via **React Three Fiber** + **drei** (OrbitControls, GizmoHelper/GizmoViewport).
+  Loaded lazily (`Scene3D.jsx` is its own chunk).
+- **i18n:** **react-i18next**. Languages: en (default), es, pt-BR, el, sr (Cyrillic).
+- **Project articles:** Markdown + **KaTeX** (react-markdown, remark-gfm, remark-math,
+  rehype-katex). `katex` is pinned for sub-dependencies via `overrides` in package.json.
 - **ESLint + Prettier**, **Vitest**, **EditorConfig**.
 - Deploy: **GitHub Actions** builds and publishes on every push to `main`.
 
@@ -58,9 +65,15 @@ references/
 scripts/             Node tooling (sync-references.mjs, lib/)
 public/              static files served as-is (meshes, textures, icons)
 src/
-  pages/             route-level components (one per route)
+  pages/             route-level components: Simulation (/), Project (/project), Team (/team)
   components/        shared UI components
-  simulations/<name>/ one folder per simulation (UI + wiring)
+    simulation/      simulation-page UI (Viewport, Scene3D, Hud, TransportBar, ParameterPanel, ...)
+    project/         Project-page wiki (Markdown renderer, contents sidebar, article loader)
+  content/project/<lang>/NN-name.md   Project articles (English defines the list)
+  i18n/              i18next setup, languages, number formatting, locales/<lang>.json
+  simulations/
+    shared/          data + helpers shared by all simulations (parameters, presets, modes, colormap)
+    <name>/          one folder per simulation engine
   physics/           pure, framework-free math/solvers. No React, no DOM. Unit tested
   styles/            global CSS
   assets/            images etc. imported from code
@@ -78,7 +91,31 @@ src/
 - **Static asset paths:** files in `public/` must be referenced with `import.meta.env.BASE_URL`
   (the site is served from `/brain-shockwave-simulation/`), or imported from `src/assets/`.
 - **Components:** function components, one per file, PascalCase filenames (`ImpactControls.jsx`).
-- **Styling:** no CSS framework or design system has been chosen yet. Ask the owner.
+- **Styling (Tailwind):** use only the semantic theme colors (`bg-bg`, `bg-surface`, `bg-surface-2`,
+  `border-line`, `text-fg`, `text-muted`, `text-accent`, `bg-accent`, `text-accent-fg`,
+  `bg-accent-soft`). Never use raw colors (`bg-slate-900`, `#hex`) or `dark:` overrides for colors.
+  Tokens live only in `src/styles/global.css`; light and dark are inverses with the same sky-blue
+  accent hue. Visual design changes need the owner's approval.
+- **Heatmaps:** always use `src/simulations/shared/colormap.js`. Its test guarantees ≥ 3:1
+  contrast against every theme background; if you change the palette, the test must still pass.
+- **Parameters:** add or change simulation parameters in `src/simulations/shared/parameters.js`
+  (the panel is generated from it). UI values are display units; convert with `toSI()`. Every
+  parameter needs `params.<id>.label` and `.description` in **all** locale files.
+- **Coordinates:** head frame x = front, y = left, z = up; spherical angles use the physics/ISO
+  convention (θ polar from +z, φ azimuth from +x). See `src/physics/geometry.js` and the
+  "Spherical coordinates" article. The 3D scene uses the same frame (z up).
+- **Translations:** never hard-code user-visible text; use `t('key')` from `useTranslation()`.
+  Add new keys to `en.json` **and** every other locale (the i18n test enforces identical keys and
+  `{{placeholders}}`). Drafted translations stay marked `"_meta": { "status": "draft - needs
+native review" }` until a native speaker approves them. Format numbers with
+  `formatNumber()` (decimal comma in es/pt-BR/el/sr). Language default is always English; the
+  visitor's choice is remembered (no browser detection).
+- **Project articles:** one Markdown file per top-level section (`## Heading`), `###` for
+  subsections; headings feed the contents sidebar. Math with `$…$` / `$$…$$`. Mark unsourced
+  claims `_[citation needed]_` until a reference is added to `references.bib`. Translations go in
+  `src/content/project/<lang>/` with the same file name; missing ones fall back to English.
+- **In-page links:** HashRouter owns the URL hash, so `#anchor` links must scroll with
+  `scrollIntoView` instead of changing the hash (see `MarkdownArticle.jsx`).
 
 ## References workflow
 

@@ -1,0 +1,170 @@
+{
+  "_meta": { "status": "source" },
+  "nav": {
+    "main": "Main",
+    "simulation": "Simulation",
+    "project": "Project",
+    "team": "Team"
+  },
+  "theme": {
+    "toLight": "Switch to light mode",
+    "toDark": "Switch to dark mode"
+  },
+  "language": {
+    "label": "Language"
+  },
+  "common": {
+    "draft": "Draft content: placeholder text, to be written by the team.",
+    "loading": "Loading…"
+  },
+  "viewport": {
+    "label": "Simulation",
+    "model": "Model",
+    "display": "Display",
+    "preview": "Preview · physics not connected yet",
+    "expand": "Expand simulation",
+    "collapse": "Exit full view (Esc)",
+    "loading3d": "Loading 3D view…",
+    "sceneLabel": "3D view of the {{model}} model. Drag to rotate, scroll to zoom.",
+    "miss": "The blow misses the head at this offset.",
+    "hud": {
+      "peakForce": "Peak force",
+      "maxStrain": "Max strain",
+      "time": "Time"
+    },
+    "legend": {
+      "stress": "Stress",
+      "low": "low",
+      "high": "high"
+    }
+  },
+  "models": {
+    "sphere": "Sphere",
+    "twoLobes": "Two lobes"
+  },
+  "displays": {
+    "heatmap": "Stress heatmap",
+    "deformation": "Deformation",
+    "force": "Force propagation"
+  },
+  "transport": {
+    "controls": "Playback controls",
+    "strike": "Strike",
+    "pause": "Pause",
+    "resume": "Resume",
+    "replay": "Replay",
+    "reset": "Reset",
+    "previousFrame": "Previous frame",
+    "nextFrame": "Next frame",
+    "timeline": "Timeline",
+    "frame": "Frame {{current}} / {{total}}",
+    "speed": "Speed",
+    "realTime": "Real time",
+    "status": {
+      "idle": "Ready",
+      "running": "Running",
+      "paused": "Paused",
+      "finished": "Finished"
+    }
+  },
+  "panel": {
+    "label": "Simulation panel",
+    "parameters": "Parameters",
+    "statistics": "Statistics",
+    "preset": "Preset",
+    "presets": "Presets",
+    "custom": "Custom",
+    "showAdvanced": "Show advanced",
+    "resetDefaults": "Reset to defaults",
+    "about": "About {{name}}",
+    "hidePanel": "Hide parameters",
+    "showPanel": "Show parameters"
+  },
+  "presets": {
+    "jab": "Jab",
+    "hook": "Heavy hook"
+  },
+  "groups": {
+    "impact": "Impact",
+    "tissue": "Brain tissue",
+    "model": "Model"
+  },
+  "params": {
+    "punchSpeed": {
+      "label": "Punch speed",
+      "description": "How fast the fist is moving when it hits."
+    },
+    "guard": {
+      "label": "Guard",
+      "description": "How much of the blow is absorbed by blocking."
+    },
+    "impactPolar": {
+      "label": "Polar angle",
+      "description": "Where the blow comes from, measured down from the top of the head: 0° is the top, 90° is level, 180° is from below."
+    },
+    "impactAzimuth": {
+      "label": "Azimuth",
+      "description": "Where the blow comes from, around the head: 0° is the front, 90° the left side, 180° the back, 270° the right side."
+    },
+    "offset": {
+      "label": "Off-center offset",
+      "description": "How far the blow passes from the center of the head. Off-center blows also twist the head."
+    },
+    "offsetDirection": {
+      "label": "Offset direction",
+      "description": "Which way the blow is shifted off-center: 0° sideways (like a hook), 90° upward, 270° downward."
+    },
+    "fistMass": {
+      "label": "Effective fist mass",
+      "description": "Mass of the fist and arm that takes part in the impact."
+    },
+    "shearModulus": {
+      "label": "Stiffness",
+      "description": "Resistance to shape change. Softer tissue deforms more."
+    },
+    "viscosity": {
+      "label": "Viscosity",
+      "description": "Internal friction. Higher values damp the wave faster."
+    },
+    "density": {
+      "label": "Density",
+      "description": "Mass per volume of the tissue."
+    },
+    "layers": {
+      "label": "Tissue layers",
+      "description": "Number of concentric layers the brain is divided into."
+    },
+    "resolution": {
+      "label": "Mesh resolution",
+      "description": "Points per layer. Higher is more detailed but slower."
+    }
+  },
+  "stats": {
+    "peakForce": "Peak force",
+    "peakPressure": "Peak pressure",
+    "maxStrain": "Max strain",
+    "waveArrival": "Wave arrival (far side)",
+    "forceOverTime": "Force over time",
+    "strainOverTime": "Strain over time",
+    "chartEmpty": "Chart appears after a simulation run"
+  },
+  "project": {
+    "title": "The project",
+    "contents": "Contents",
+    "sources": "Sources",
+    "noSources": "No sources added yet.",
+    "untranslated": "This article is not yet available in your language. Showing the English version."
+  },
+  "team": {
+    "eyebrow": "The team",
+    "title": "Who we are",
+    "lead": "The people behind the simulation.",
+    "memberName": "Team member",
+    "memberRole": "Role",
+    "memberBio": "Short biography: background, interests and what they work on in this project."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "back": "Back to the simulation"
+  }
+}

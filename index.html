@@ -8,6 +8,20 @@
       content="Interactive simulations of shockwave propagation through the brain."
     />
     <title>Brain Shockwave Simulation</title>
+    <script>
+      // Apply the theme before first paint to avoid a light/dark flash.
+      // A saved choice wins; otherwise follow the OS setting.
+      (function () {
+        var theme;
+        try {
+          theme = localStorage.getItem('theme');
+        } catch (e) {}
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,0 +1,170 @@
+{
+  "_meta": { "status": "draft - needs native review" },
+  "nav": {
+    "main": "Principal",
+    "simulation": "Simulação",
+    "project": "Projeto",
+    "team": "Equipe"
+  },
+  "theme": {
+    "toLight": "Mudar para o modo claro",
+    "toDark": "Mudar para o modo escuro"
+  },
+  "language": {
+    "label": "Idioma"
+  },
+  "common": {
+    "draft": "Conteúdo provisório: texto de exemplo, a ser escrito pela equipe.",
+    "loading": "Carregando…"
+  },
+  "viewport": {
+    "label": "Simulação",
+    "model": "Modelo",
+    "display": "Visualização",
+    "preview": "Prévia · física ainda não conectada",
+    "expand": "Ampliar simulação",
+    "collapse": "Sair da tela cheia (Esc)",
+    "loading3d": "Carregando visualização 3D…",
+    "sceneLabel": "Visualização 3D do modelo {{model}}. Arraste para girar, use a rolagem para aproximar.",
+    "miss": "Com este deslocamento o golpe não atinge a cabeça.",
+    "hud": {
+      "peakForce": "Força máxima",
+      "maxStrain": "Deformação máx.",
+      "time": "Tempo"
+    },
+    "legend": {
+      "stress": "Tensão",
+      "low": "baixa",
+      "high": "alta"
+    }
+  },
+  "models": {
+    "sphere": "Esfera",
+    "twoLobes": "Dois lobos"
+  },
+  "displays": {
+    "heatmap": "Mapa de tensão",
+    "deformation": "Deformação",
+    "force": "Propagação da força"
+  },
+  "transport": {
+    "controls": "Controles de reprodução",
+    "strike": "Golpear",
+    "pause": "Pausar",
+    "resume": "Continuar",
+    "replay": "Repetir",
+    "reset": "Reiniciar",
+    "previousFrame": "Quadro anterior",
+    "nextFrame": "Próximo quadro",
+    "timeline": "Linha do tempo",
+    "frame": "Quadro {{current}} / {{total}}",
+    "speed": "Velocidade",
+    "realTime": "Tempo real",
+    "status": {
+      "idle": "Pronto",
+      "running": "Em execução",
+      "paused": "Pausado",
+      "finished": "Concluído"
+    }
+  },
+  "panel": {
+    "label": "Painel da simulação",
+    "parameters": "Parâmetros",
+    "statistics": "Estatísticas",
+    "preset": "Predefinição",
+    "presets": "Predefinições",
+    "custom": "Personalizado",
+    "showAdvanced": "Mostrar avançados",
+    "resetDefaults": "Restaurar padrões",
+    "about": "Sobre {{name}}",
+    "hidePanel": "Ocultar parâmetros",
+    "showPanel": "Mostrar parâmetros"
+  },
+  "presets": {
+    "jab": "Jab",
+    "hook": "Cruzado forte"
+  },
+  "groups": {
+    "impact": "Impacto",
+    "tissue": "Tecido cerebral",
+    "model": "Modelo"
+  },
+  "params": {
+    "punchSpeed": {
+      "label": "Velocidade do soco",
+      "description": "A velocidade do punho no momento do impacto."
+    },
+    "guard": {
+      "label": "Guarda",
+      "description": "Quanto do golpe é absorvido pelo bloqueio."
+    },
+    "impactPolar": {
+      "label": "Ângulo polar",
+      "description": "De onde vem o golpe, medido a partir do topo da cabeça: 0° é o topo, 90° é horizontal, 180° é de baixo."
+    },
+    "impactAzimuth": {
+      "label": "Azimute",
+      "description": "De onde vem o golpe ao redor da cabeça: 0° é a frente, 90° o lado esquerdo, 180° a nuca, 270° o lado direito."
+    },
+    "offset": {
+      "label": "Deslocamento do centro",
+      "description": "A que distância do centro da cabeça o golpe passa. Golpes descentralizados também giram a cabeça."
+    },
+    "offsetDirection": {
+      "label": "Direção do deslocamento",
+      "description": "Para onde o golpe é deslocado: 0° para o lado (como um cruzado), 90° para cima, 270° para baixo."
+    },
+    "fistMass": {
+      "label": "Massa efetiva do punho",
+      "description": "Massa do punho e do braço que participa do impacto."
+    },
+    "shearModulus": {
+      "label": "Rigidez",
+      "description": "Resistência à mudança de forma. Tecido mais mole se deforma mais."
+    },
+    "viscosity": {
+      "label": "Viscosidade",
+      "description": "Atrito interno. Valores maiores amortecem a onda mais rápido."
+    },
+    "density": {
+      "label": "Densidade",
+      "description": "Massa por unidade de volume do tecido."
+    },
+    "layers": {
+      "label": "Camadas de tecido",
+      "description": "Número de camadas concêntricas em que o cérebro é dividido."
+    },
+    "resolution": {
+      "label": "Resolução da malha",
+      "description": "Pontos por camada. Maior é mais detalhado, porém mais lento."
+    }
+  },
+  "stats": {
+    "peakForce": "Força máxima",
+    "peakPressure": "Pressão máxima",
+    "maxStrain": "Deformação máxima",
+    "waveArrival": "Chegada da onda (lado oposto)",
+    "forceOverTime": "Força ao longo do tempo",
+    "strainOverTime": "Deformação ao longo do tempo",
+    "chartEmpty": "O gráfico aparece após uma simulação"
+  },
+  "project": {
+    "title": "O projeto",
+    "contents": "Conteúdo",
+    "sources": "Fontes",
+    "noSources": "Nenhuma fonte adicionada ainda.",
+    "untranslated": "Este artigo ainda não está disponível no seu idioma. Exibindo a versão em inglês."
+  },
+  "team": {
+    "eyebrow": "A equipe",
+    "title": "Quem somos",
+    "lead": "As pessoas por trás da simulação.",
+    "memberName": "Membro da equipe",
+    "memberRole": "Função",
+    "memberBio": "Breve biografia: formação, interesses e no que trabalha neste projeto."
+  },
+  "notFound": {
+    "title": "Página não encontrada",
+    "back": "Voltar para a simulação"
+  }
+}
